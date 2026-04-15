@@ -37,6 +37,7 @@ export default function Navigation() {
           <Link href="/films" className="text-gray-300 hover:text-white transition-colors">상영관</Link>
           <Link href="/prompt-score" className="text-gray-300 hover:text-white transition-colors">Bloom 평가</Link>
           <Link href="/trends" className="text-gray-300 hover:text-white transition-colors">트렌드</Link>
+          <Link href="/community" className="text-gray-300 hover:text-white transition-colors">커뮤니티</Link>
         </div>
         <div className="flex items-center gap-4">
           <Link href="/films/register"

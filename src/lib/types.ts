@@ -76,6 +76,51 @@ export const AI_TOOLS = [
 
 export const GENRES = ['SF', '드라마', '판타지', '스릴러', '로맨스', '사이버펑크', '다큐멘터리', '실험영화', '뮤직비디오'];
 
+// ──────────────────────────────────────────────────
+// Community types
+// ──────────────────────────────────────────────────
+export type PostCategory = 'free' | 'creation' | 'dna_debate' | 'showcase' | 'qna';
+
+export const POST_CATEGORY_CONFIG: Record<PostCategory, { label: string; emoji: string; color: string }> = {
+  creation:   { label: 'AI 제작 팁', emoji: '🔧', color: '#60A5FA' },
+  dna_debate: { label: 'DNA 토론',   emoji: '🔥', color: '#F97316' },
+  showcase:   { label: '내 작품',    emoji: '🎬', color: '#A78BFA' },
+  qna:        { label: 'Q&A',        emoji: '💬', color: '#34D399' },
+  free:       { label: '자유 토론',  emoji: '🗣️', color: '#9CA3AF' },
+};
+
+export interface Post {
+  id: string;
+  author_id?: string;
+  title: string;
+  content: string;
+  category: PostCategory;
+  film_id?: string;
+  tags?: string[];
+  vote_count?: number;
+  comment_count?: number;
+  view_count?: number;
+  is_pinned?: boolean;
+  is_published?: boolean;
+  created_at: string;
+  updated_at?: string;
+  profiles?: Profile;
+  films?: Pick<Film, 'id' | 'title' | 'thumbnail_url' | 'prompt_score' | 'audience_score' | 'bloom_stage'>;
+}
+
+export interface PostComment {
+  id: string;
+  post_id: string;
+  author_id?: string;
+  content: string;
+  parent_id?: string;
+  vote_count?: number;
+  is_published?: boolean;
+  created_at: string;
+  profiles?: Profile;
+  replies?: PostComment[];
+}
+
 // Trends types
 export type TrendCategory = 'all' | 'technology' | 'news' | 'discussion' | 'showcase';
 

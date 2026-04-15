@@ -332,22 +332,43 @@ export default function FilmDetailClient({ film }: FilmDetailClientProps) {
           </div>
         )}
 
-        {/* YouTube 버튼 */}
-        {youtubeUrl && (
-          <div className="flex justify-center mb-10">
+        {/* YouTube 버튼 + DNA 토론 버튼 */}
+        <div className="flex flex-wrap justify-center gap-3 mb-10">
+          {youtubeUrl && (
             <a
               href={youtubeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold transition-colors"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
               </svg>
               YouTube에서 보기
             </a>
-          </div>
-        )}
+          )}
+          {/* DNA Gap 토론 버튼 — PS와 AS 차이가 클 때 강조 */}
+          {(() => {
+            const gap = Math.abs((f.prompt_score ?? 0) - (f.audience_score ?? 0));
+            const hasScores = (f.prompt_score ?? 0) > 0 && (f.audience_score ?? 0) > 0;
+            if (!hasScores) return null;
+            const isHot = gap >= 15;
+            const newPostUrl = `/community/new?category=dna_debate&filmId=${f.id}`;
+            return (
+              <Link
+                href={newPostUrl}
+                className={`inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-semibold transition-colors ${
+                  isHot
+                    ? 'bg-orange-500/20 border border-orange-500/50 text-orange-300 hover:bg-orange-500/30'
+                    : 'bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                {isHot ? '🔥' : '💬'}
+                {isHot ? `DNA Gap ${gap}pt — 토론하기` : '이 영화 토론하기'}
+              </Link>
+            );
+          })()}
+        </div>
 
         {/* 리뷰 섹션 */}
         <div>
