@@ -115,11 +115,21 @@ export default function FilmDetailClient({ film }: FilmDetailClientProps) {
 
   const f = film;
   const bloom = BLOOM_CONFIG[(f.bloom_stage || 'seed') as keyof typeof BLOOM_CONFIG] || BLOOM_CONFIG.seed;
+
+  // youtube_id 폴백: youtube_url에서 파싱 (v=..., /embed/..., /shorts/..., youtu.be/... 지원)
+  const extractVideoId = (url?: string): string | null => {
+    if (!url) return null;
+    const m = url.match(/(?:v=|\/embed\/|\/shorts\/|youtu\.be\/)([\w-]{11})/);
+    return m ? m[1] : null;
+  };
+  const videoId =
+    f.youtube_id || extractVideoId((f as unknown as { youtube_url?: string }).youtube_url);
+
   const thumbUrl =
     f.thumbnail_url ??
-    (f.youtube_id ? `https://img.youtube.com/vi/${f.youtube_id}/hqdefault.jpg` : null);
-  const youtubeUrl = f.youtube_id
-    ? `https://www.youtube.com/watch?v=${f.youtube_id}`
+    (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null);
+  const youtubeUrl = videoId
+    ? `https://www.youtube.com/watch?v=${videoId}`
     : (f as unknown as { youtube_url?: string }).youtube_url;
 
   const ps      = Math.round(f.prompt_score   ?? 0);
@@ -196,17 +206,27 @@ export default function FilmDetailClient({ film }: FilmDetailClientProps) {
           <span className="text-gray-400 truncate max-w-xs">{f.title}</span>
         </div>
 
-        {/* 썸네일 */}
-        {thumbUrl && (
-          <div className="relative rounded-2xl overflow-hidden mb-8 aspect-video bg-gray-800">
-            <img src={thumbUrl} alt={f.title} className="w-full h-full object-cover" />
-            <div className="absolute top-4 left-4">
-              <span className="text-sm px-3 py-1.5 rounded-full bg-black/60 backdrop-blur font-medium">
+        {/* 영상 플레이어 (YouTube iframe) + 오버레이 */}
+        {(videoId || thumbUrl) && (
+          <div className="relative rounded-2xl overflow-hidden mb-8 aspect-video bg-black">
+            {videoId ? (
+              <iframe
+                src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+                title={f.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full border-0"
+              />
+            ) : (
+              thumbUrl && <img src={thumbUrl} alt={f.title} className="w-full h-full object-cover" />
+            )}
+            <div className="absolute top-4 left-4 pointer-events-none z-10">
+              <span className="text-sm px-3 py-1.5 rounded-full bg-black/70 backdrop-blur font-medium inline-block">
                 {bloom.emoji} {bloom.label}
               </span>
             </div>
             {/* 좋아요 버튼 */}
-            <div className="absolute top-4 right-4">
+            <div className="absolute top-4 right-4 z-10">
               <button
                 onClick={handleLike}
                 disabled={likeLoading}
