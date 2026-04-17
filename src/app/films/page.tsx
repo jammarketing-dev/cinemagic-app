@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { Film } from '@/lib/types';
 import { BLOOM_CONFIG } from '@/lib/types';
 
-type SortOption = 'latest' | 'ps_high' | 'views';
+type SortOption = 'curated' | 'latest' | 'ps_high' | 'views';
 
 const GENRE_FILTERS = ['전체', 'SF', '드라마', '판타지', '스릴러', '로맨스', '사이버펑크', '다큐멘터리', '실험영화', '뮤직비디오'];
 const TOOL_FILTERS = ['전체', 'Sora 2', 'Veo 3', 'Runway Gen-4', 'Kling 2.0', 'Pika 2.2', 'Hailuo', 'Luma Dream Machine', 'Midjourney', 'Other'];
@@ -16,7 +16,7 @@ export default function FilmsPage() {
   const [loading, setLoading] = useState(true);
   const [genre, setGenre] = useState('전체');
   const [tool, setTool] = useState('전체');
-  const [sort, setSort] = useState<SortOption>('latest');
+  const [sort, setSort] = useState<SortOption>('curated');
 
   const getBloomConfig = (stage?: string) => {
     const key = (stage || 'seed') as keyof typeof BLOOM_CONFIG;
@@ -45,8 +45,15 @@ export default function FilmsPage() {
       case 'views':
         query = query.order('views', { ascending: false });
         break;
-      default:
+      case 'latest':
         query = query.order('created_at', { ascending: false });
+        break;
+      default:
+        // 'curated' — 003_curation_columns 기반 기본 정렬
+        query = query
+          .order('is_featured',   { ascending: false })
+          .order('quality_score', { ascending: false, nullsFirst: false })
+          .order('created_at',    { ascending: false });
     }
 
     const { data } = await query.limit(50);
@@ -97,6 +104,7 @@ export default function FilmsPage() {
           {/* Sort */}
           <div className="flex gap-2">
             {[
+              { value: 'curated' as SortOption, label: '추천순' },
               { value: 'latest' as SortOption, label: '최신순' },
               { value: 'ps_high' as SortOption, label: 'PS 높은순' },
               { value: 'views' as SortOption, label: '조회수순' },

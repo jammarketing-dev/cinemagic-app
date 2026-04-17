@@ -34,6 +34,10 @@ export interface Film {
   likes_count?: number;
   is_published?: boolean;
   is_featured?: boolean;
+  // Curation fields (003_curation_columns migration)
+  quality_score?: number;          // QualityScorer.score() 0~100
+  quality_tier?: 'S' | 'A' | 'B' | 'C';
+  best_tool_gen?: number;          // 1~5 (gen5 = Sora2 / Veo3.1 / Kling3 / Seedance2)
   created_at: string;
   profiles?: Profile;
 }
