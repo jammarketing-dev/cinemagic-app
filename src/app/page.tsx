@@ -20,13 +20,15 @@ export default function Home() {
       setShowIntro(true);
       setIntroReady(true);
     }
-    // Fetch latest films
+    // Fetch curated films (003_curation_columns: is_featured + quality_score 기반 추천 정렬)
     const supabase = createClient();
     supabase
       .from('films')
       .select('*, profiles(nickname, avatar_url)')
       .eq('is_published', true)
-      .order('created_at', { ascending: false })
+      .order('is_featured',   { ascending: false })
+      .order('quality_score', { ascending: false, nullsFirst: false })
+      .order('created_at',    { ascending: false })
       .limit(6)
       .then(({ data }) => { if (data) setLatestFilms(data as Film[]); });
   }, []);
@@ -103,7 +105,7 @@ export default function Home() {
           <section className="border-t border-gray-800/50 py-20">
             <div className="max-w-7xl mx-auto px-4 md:px-6">
               <div className="flex items-center justify-between mb-10">
-                <h2 className="text-2xl md:text-3xl font-serif font-bold">최신 상영작</h2>
+                <h2 className="text-2xl md:text-3xl font-serif font-bold">추천 상영작</h2>
                 <Link href="/films" className="text-[#FF6B9D] hover:text-[#FF8BB3] text-sm transition-colors">
                   모두 보기 →
                 </Link>
