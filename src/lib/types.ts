@@ -69,9 +69,12 @@ export const BLOOM_CONFIG: Record<BloomStage, { label: string; emoji: string; co
 };
 
 export const AI_TOOLS = [
-  'Sora 2', 'Veo 3', 'Runway Gen-4', 'Kling 2.0', 'Pika 2.2',
-  'Midjourney', 'Stable Diffusion', 'ComfyUI', 'Hailuo', 'Luma Dream Machine',
-  'Higgsfield', 'Other'
+  // Gen 5 (2025~2026)
+  'Sora 3', 'Sora 2', 'Veo 3', 'Runway Gen-4', 'Kling 2.0', 'Seedance 2.0', 'Wan Video', 'Minimax Video-01',
+  // Gen 4 (2024 후반~2025 초)
+  'Veo 2', 'Runway Gen-3', 'Kling 1.6', 'Hailuo', 'Pika 2.0', 'Luma Dream Machine', 'Seedance', 'Vidu', 'Pixverse', 'Higgsfield', 'LTX Video',
+  // Gen 3 이하 + Generic
+  'Runway', 'Sora', 'Kling', 'Pika', 'Stable Diffusion', 'MidJourney', 'Other',
 ];
 
 export const GENRES = ['SF', '드라마', '판타지', '스릴러', '로맨스', '사이버펑크', '다큐멘터리', '실험영화', '뮤직비디오'];
