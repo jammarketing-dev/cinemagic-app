@@ -9,7 +9,7 @@ import BadgeGrid from '@/components/BadgeGrid';
 import { BLOOM_CONFIG, Film, Review } from '@/lib/types';
 import { createReadonlyClient } from '@/lib/supabase/readonly';
 import { createClient } from '@/lib/supabase/client';
-import { fetchUserBadgesMap } from '@/lib/supabase/community';
+import { fetchUserBadgesMap, incrementPromoterPoints } from '@/lib/supabase/community';
 
 type ReviewWithProfile = Review & {
   profiles?: { nickname?: string; promoter_rank?: string };
@@ -82,6 +82,9 @@ function ReviewItem({ review, currentUserId, badges }: { review: ReviewWithProfi
     setLoading(true);
     try {
       const supabase = createClient();
+      const reviewAuthorId = review.user_id;
+      // 자기 리뷰 도움됨 토글은 포인트 적립 제외 (셀프 파밍 방지)
+      const isSelf = !!reviewAuthorId && reviewAuthorId === currentUserId;
       if (voted) {
         await supabase
           .from('review_votes')
@@ -90,12 +93,20 @@ function ReviewItem({ review, currentUserId, badges }: { review: ReviewWithProfi
           .eq('user_id', currentUserId);
         setHelpful(h => Math.max(0, h - 1));
         setVoted(false);
+        // 리뷰 작성자 -3pt (베스트에포트)
+        if (reviewAuthorId && !isSelf) {
+          incrementPromoterPoints(reviewAuthorId, -3);
+        }
       } else {
         await supabase
           .from('review_votes')
           .insert({ review_id: review.id, user_id: currentUserId, vote_type: 'helpful' });
         setHelpful(h => h + 1);
         setVoted(true);
+        // 리뷰 작성자 +3pt (베스트에포트)
+        if (reviewAuthorId && !isSelf) {
+          incrementPromoterPoints(reviewAuthorId, 3);
+        }
       }
     } catch {
       // ignore
