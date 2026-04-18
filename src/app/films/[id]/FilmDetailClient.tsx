@@ -4,9 +4,15 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import BloomRingGauge from '@/components/BloomRingGauge';
 import DnaRadarChart, { DnaData } from '@/components/DnaRadarChart';
+import PromoterBadge from '@/components/PromoterBadge';
 import { BLOOM_CONFIG, Film, Review } from '@/lib/types';
 import { createReadonlyClient } from '@/lib/supabase/readonly';
 import { createClient } from '@/lib/supabase/client';
+
+type ReviewWithProfile = Review & {
+  profiles?: { nickname?: string; promoter_rank?: string };
+  review_votes?: { user_id: string }[];
+};
 
 interface FilmDetailClientProps {
   film: Film;
@@ -57,15 +63,43 @@ function DnaBar({ label, value, color = '#FF6B9D' }: { label: string; value: num
 }
 
 /* ── 리뷰 아이템 ── */
-function ReviewItem({ review }: { review: Review & { profiles?: { nickname?: string } } }) {
-  const [likes, setLikes] = useState(review.likes_count ?? 0);
-  const [liked, setLiked] = useState(false);
+function ReviewItem({ review, currentUserId }: { review: ReviewWithProfile; currentUserId: string | null }) {
+  const votes = review.review_votes ?? [];
+  const initialCount = votes.length;
+  const initialVoted = !!(currentUserId && votes.some(v => v.user_id === currentUserId));
+  const [helpful, setHelpful] = useState(initialCount);
+  const [voted, setVoted] = useState(initialVoted);
+  const [loading, setLoading] = useState(false);
 
-  const handleLike = async () => {
-    if (liked) return;
-    setLiked(true);
-    setLikes(l => l + 1);
-    // 실제 like는 인증 필요 — 미구현
+  const toggleHelpful = async () => {
+    if (loading) return;
+    if (!currentUserId) {
+      window.location.href = '/auth/login';
+      return;
+    }
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      if (voted) {
+        await supabase
+          .from('review_votes')
+          .delete()
+          .eq('review_id', review.id)
+          .eq('user_id', currentUserId);
+        setHelpful(h => Math.max(0, h - 1));
+        setVoted(false);
+      } else {
+        await supabase
+          .from('review_votes')
+          .insert({ review_id: review.id, user_id: currentUserId, vote_type: 'helpful' });
+        setHelpful(h => h + 1);
+        setVoted(true);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -76,6 +110,7 @@ function ReviewItem({ review }: { review: Review & { profiles?: { nickname?: str
             {(review.profiles?.nickname ?? '익명')[0]?.toUpperCase()}
           </div>
           <span className="text-sm text-gray-300">{review.profiles?.nickname ?? '익명'}</span>
+          <PromoterBadge rank={review.profiles?.promoter_rank} />
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-blue-400">{review.audience_score}</span>
@@ -92,13 +127,16 @@ function ReviewItem({ review }: { review: Review & { profiles?: { nickname?: str
           {new Date(review.created_at).toLocaleDateString('ko-KR')}
         </span>
         <button
-          onClick={handleLike}
-          className={`flex items-center gap-1.5 text-xs transition-colors ${liked ? 'text-[#FF6B9D]' : 'text-gray-500 hover:text-gray-300'}`}
+          onClick={toggleHelpful}
+          disabled={loading}
+          className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded transition-colors ${
+            voted
+              ? 'bg-pink-900/40 text-pink-300'
+              : 'bg-gray-800/60 text-gray-400 hover:text-gray-200'
+          } disabled:opacity-50`}
         >
-          <svg className="w-3.5 h-3.5" fill={liked ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-          {likes}
+          <span>👍</span>
+          <span>도움됨 {helpful}</span>
         </button>
       </div>
     </div>
@@ -107,11 +145,12 @@ function ReviewItem({ review }: { review: Review & { profiles?: { nickname?: str
 
 /* ── 메인 클라이언트 컴포넌트 ── */
 export default function FilmDetailClient({ film }: FilmDetailClientProps) {
-  const [reviews, setReviews] = useState<(Review & { profiles?: { nickname?: string } })[]>([]);
+  const [reviews, setReviews] = useState<ReviewWithProfile[]>([]);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(film.likes_count ?? 0);
   const [likeLoading, setLikeLoading] = useState(false);
   const [reviewsLoaded, setReviewsLoaded] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const f = film;
   const bloom = BLOOM_CONFIG[(f.bloom_stage || 'seed') as keyof typeof BLOOM_CONFIG] || BLOOM_CONFIG.seed;
@@ -137,17 +176,30 @@ export default function FilmDetailClient({ film }: FilmDetailClientProps) {
   const dna     = getDnaData(f);
   const showDna = hasDna(f) && ps > 0;
 
+  /* 현재 유저 ID 로드 */
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id ?? null);
+    })();
+  }, []);
+
   /* 리뷰 로드 */
   useEffect(() => {
     (async () => {
       const supabase = createReadonlyClient();
       const { data } = await supabase
         .from('reviews')
-        .select('*, profiles(nickname)')
+        .select(`
+          *,
+          profiles (nickname, promoter_rank, promoter_points, helpful_votes),
+          review_votes (user_id)
+        `)
         .eq('film_id', f.id)
         .order('likes_count', { ascending: false })
         .limit(10);
-      if (data) setReviews(data as (Review & { profiles?: { nickname?: string } })[]);
+      if (data) setReviews(data as ReviewWithProfile[]);
       setReviewsLoaded(true);
     })();
   }, [f.id]);
@@ -417,7 +469,7 @@ export default function FilmDetailClient({ film }: FilmDetailClientProps) {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {reviews.map(r => <ReviewItem key={r.id} review={r} />)}
+              {reviews.map(r => <ReviewItem key={r.id} review={r} currentUserId={currentUserId} />)}
             </div>
           )}
         </div>
