@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import type { Post, PostComment, PostCategory } from '@/lib/types';
+import type { Post, PostComment, PostCategory, Film, Review } from '@/lib/types';
 
 // ──────────────────────────────────────────────────
 // Posts
@@ -195,5 +195,121 @@ export async function fetchDnaDebatePosts(limit = 5): Promise<Post[]> {
   } catch (e) {
     console.error('fetchDnaDebatePosts error:', e);
     return [];
+  }
+}
+
+// ──────────────────────────────────────────────────
+// Profile
+// ──────────────────────────────────────────────────
+
+export async function fetchProfileById(userId: string) {
+  const supabase = createClient();
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, nickname, avatar_url, role, bio, youtube_channel, created_at, promoter_rank, promoter_points, helpful_votes')
+      .eq('id', userId)
+      .single();
+    if (error) throw error;
+    return data;
+  } catch (e) {
+    console.error('fetchProfileById error:', e);
+    return null;
+  }
+}
+
+export async function fetchUserPosts(userId: string, limit = 10) {
+  const supabase = createClient();
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .select('*, profiles(id, nickname), films(id, title, thumbnail_url)')
+      .eq('author_id', userId)
+      .eq('is_published', true)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return (data ?? []) as Post[];
+  } catch (e) {
+    console.error('fetchUserPosts error:', e);
+    return [];
+  }
+}
+
+export async function fetchUserReviews(userId: string, limit = 10) {
+  const supabase = createClient();
+  try {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*, profiles(id, nickname), films(id, title, thumbnail_url, prompt_score, audience_score, bloom_stage)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return (data ?? []) as (Review & { films?: Pick<Film, 'id' | 'title' | 'thumbnail_url' | 'prompt_score' | 'audience_score' | 'bloom_stage'> })[];
+  } catch (e) {
+    console.error('fetchUserReviews error:', e);
+    return [];
+  }
+}
+
+export async function fetchUserCreatedFilms(userId: string, limit = 10) {
+  const supabase = createClient();
+  try {
+    const { data, error } = await supabase
+      .from('films')
+      .select('id, title, thumbnail_url, prompt_score, audience_score, bloom_stage, youtube_url, creator_id')
+      .eq('creator_id', userId)
+      .eq('is_published', true)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return (data ?? []) as any[];
+  } catch (e) {
+    console.error('fetchUserCreatedFilms error:', e);
+    return [];
+  }
+}
+
+export async function fetchUserDnaStats(userId: string) {
+  const supabase = createClient();
+  try {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('dna_storytelling, dna_visual, dna_creativity, dna_prompt_design, dna_sound')
+      .eq('user_id', userId);
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return null;
+    }
+
+    const sum = {
+      storytelling: 0,
+      visual: 0,
+      creativity: 0,
+      promptDesign: 0,
+      sound: 0,
+    };
+
+    data.forEach((review: any) => {
+      sum.storytelling += review.dna_storytelling ?? 0;
+      sum.visual += review.dna_visual ?? 0;
+      sum.creativity += review.dna_creativity ?? 0;
+      sum.promptDesign += review.dna_prompt_design ?? 0;
+      sum.sound += review.dna_sound ?? 0;
+    });
+
+    return {
+      storytelling: Math.round(sum.storytelling / data.length),
+      visual: Math.round(sum.visual / data.length),
+      creativity: Math.round(sum.creativity / data.length),
+      promptDesign: Math.round(sum.promptDesign / data.length),
+      sound: Math.round(sum.sound / data.length),
+      totalReviews: data.length,
+    };
+  } catch (e) {
+    console.error('fetchUserDnaStats error:', e);
+    return null;
   }
 }
