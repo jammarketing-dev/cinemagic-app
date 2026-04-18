@@ -1,5 +1,3 @@
-'use server';
-
 import Link from 'next/link';
 import { fetchProfileById, fetchUserPosts, fetchUserReviews, fetchUserCreatedFilms, fetchUserDnaStats } from '@/lib/supabase/community';
 import { BLOOM_CONFIG } from '@/lib/types';
