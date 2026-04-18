@@ -88,9 +88,13 @@ export default function PostCard({ post }: { post: Post }) {
               <span className={rank?.color ?? 'text-gray-500'}>
                 {rank?.label ?? '🌱 루키'}
               </span>
-              <span className="font-medium text-gray-400">
+              <Link
+                href={`/profile/${post.author_id}`}
+                onClick={e => e.stopPropagation()}
+                className="font-medium text-gray-400 hover:text-[#FF6B9D] transition-colors"
+              >
                 {post.profiles?.nickname ?? '익명'}
-              </span>
+              </Link>
               <span>·</span>
               <span>{timeAgo(post.created_at)}</span>
               <span>·</span>
