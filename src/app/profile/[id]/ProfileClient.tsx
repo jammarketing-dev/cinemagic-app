@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import PromoterBadge from '@/components/PromoterBadge';
+import BadgeGrid from '@/components/BadgeGrid';
 import DnaRadarChart, { DnaData } from '@/components/DnaRadarChart';
 import { BLOOM_CONFIG, type Post, type Review, type Film } from '@/lib/types';
 
@@ -31,6 +32,7 @@ interface ProfileClientProps {
     sound: number;
     totalReviews: number;
   } | null;
+  badges: string[];
   createdDaysAgo: number;
 }
 
@@ -40,6 +42,7 @@ export default function ProfileClient({
   reviews,
   films,
   dnaStats,
+  badges,
   createdDaysAgo,
 }: ProfileClientProps) {
   const [activeTab, setActiveTab] = useState<TabType>('posts');
@@ -111,6 +114,20 @@ export default function ProfileClient({
       </div>
 
       <main className="max-w-4xl mx-auto px-4 md:px-6 py-8">
+        {/* ──── 획득한 배지 ──── */}
+        <div className="mb-10">
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">획득한 배지</h2>
+          {badges.length > 0 ? (
+            <div className="bg-[#1A1A2E] rounded-xl p-4 border border-white/10">
+              <BadgeGrid badges={badges} size="md" />
+            </div>
+          ) : (
+            <div className="bg-[#1A1A2E] rounded-xl p-4 border border-white/10 text-xs text-gray-500">
+              아직 획득한 배지가 없어요 — 리뷰·댓글·영화 등록으로 도전해보세요
+            </div>
+          )}
+        </div>
+
         {/* ──── DNA 통계 ──── */}
         {dnaStats && reviews.length > 0 && (
           <div className="mb-10">
