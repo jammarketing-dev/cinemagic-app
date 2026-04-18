@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { fetchProfileById, fetchUserPosts, fetchUserReviews, fetchUserCreatedFilms, fetchUserDnaStats } from '@/lib/supabase/community';
+import { fetchProfileById, fetchUserPosts, fetchUserReviews, fetchUserCreatedFilms, fetchUserDnaStats, fetchUserBadges } from '@/lib/supabase/community';
 import { BLOOM_CONFIG } from '@/lib/types';
 import ProfileClient from './ProfileClient';
 
@@ -11,12 +11,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const { id } = await params;
 
   // Server-side 데이터 페칭
-  const [profile, posts, reviews, films, dnaStats] = await Promise.all([
+  const [profile, posts, reviews, films, dnaStats, badges] = await Promise.all([
     fetchProfileById(id),
     fetchUserPosts(id, 10),
     fetchUserReviews(id, 10),
     fetchUserCreatedFilms(id, 10),
     fetchUserDnaStats(id),
+    fetchUserBadges(id),
   ]);
 
   if (!profile) {
@@ -40,6 +41,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       reviews={reviews}
       films={films}
       dnaStats={dnaStats}
+      badges={badges}
       createdDaysAgo={createdDaysAgo}
     />
   );
