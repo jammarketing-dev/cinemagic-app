@@ -2,6 +2,25 @@ import { createClient } from '@/lib/supabase/client';
 import type { Post, PostComment, PostCategory, Film, Review } from '@/lib/types';
 
 // ──────────────────────────────────────────────────
+// Promoter Points (Phase C2)
+// ──────────────────────────────────────────────────
+
+/**
+ * 프롬프터 포인트 적립 RPC 호출.
+ * 실패해도 메인 플로우(리뷰·글·댓글)는 성공 처리 — 포인트는 best-effort.
+ * 권장 delta: 리뷰+10 / 도움됨수신+3 / 게시글+5 / 댓글+1
+ */
+export async function incrementPromoterPoints(userId: string, delta: number): Promise<void> {
+  if (!userId || !delta) return;
+  try {
+    const supabase = createClient();
+    await supabase.rpc('increment_promoter_points', { p_user_id: userId, p_delta: delta });
+  } catch (e) {
+    console.warn('incrementPromoterPoints failed (non-blocking):', e);
+  }
+}
+
+// ──────────────────────────────────────────────────
 // Posts
 // ──────────────────────────────────────────────────
 
@@ -85,6 +104,10 @@ export async function createPost(post: {
     .single();
 
   if (error) { console.error('createPost error:', error); return null; }
+
+  // 게시글 작성 +5pt (best-effort, 실패해도 게시글은 정상 반환)
+  await incrementPromoterPoints(user.id, 5);
+
   return data;
 }
 
@@ -133,6 +156,10 @@ export async function createComment(opts: {
     .single();
 
   if (error) { console.error('createComment error:', error); return null; }
+
+  // 댓글 작성 +1pt (best-effort)
+  await incrementPromoterPoints(user.id, 1);
+
   return data as PostComment;
 }
 
