@@ -46,7 +46,12 @@ function CommentItem({ comment, onReply }: { comment: PostComment; onReply: (id:
             {comment.profiles?.nickname?.[0]?.toUpperCase() ?? '?'}
           </div>
           <span className={`text-xs ${rank?.color ?? 'text-gray-500'}`}>{rank?.label ?? '🌱'}</span>
-          <span className="text-sm font-medium text-gray-300">{comment.profiles?.nickname ?? '익명'}</span>
+          <Link
+            href={`/profile/${comment.author_id}`}
+            className="text-sm font-medium text-gray-300 hover:text-[#FF6B9D] transition-colors"
+          >
+            {comment.profiles?.nickname ?? '익명'}
+          </Link>
           <span className="text-xs text-gray-600">·</span>
           <span className="text-xs text-gray-600">{timeAgo(comment.created_at)}</span>
           <span className="text-xs text-gray-600">▲ {comment.vote_count ?? 0}</span>
