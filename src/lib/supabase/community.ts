@@ -271,6 +271,46 @@ export async function fetchUserCreatedFilms(userId: string, limit = 10) {
   }
 }
 
+// ──────────────────────────────────────────────────
+// User Badges
+// ──────────────────────────────────────────────────
+
+export async function fetchUserBadges(userId: string): Promise<string[]> {
+  const supabase = createClient();
+  try {
+    const { data, error } = await supabase
+      .from('user_badges')
+      .select('badge_type')
+      .eq('user_id', userId);
+    if (error) throw error;
+    return (data ?? []).map((b: { badge_type: string }) => b.badge_type);
+  } catch (e) {
+    console.error('fetchUserBadges error:', e);
+    return [];
+  }
+}
+
+export async function fetchUserBadgesMap(userIds: string[]): Promise<Record<string, string[]>> {
+  const supabase = createClient();
+  if (!userIds.length) return {};
+  try {
+    const { data, error } = await supabase
+      .from('user_badges')
+      .select('user_id, badge_type')
+      .in('user_id', userIds);
+    if (error) throw error;
+    const map: Record<string, string[]> = {};
+    (data ?? []).forEach((row: { user_id: string; badge_type: string }) => {
+      if (!map[row.user_id]) map[row.user_id] = [];
+      map[row.user_id].push(row.badge_type);
+    });
+    return map;
+  } catch (e) {
+    console.error('fetchUserBadgesMap error:', e);
+    return {};
+  }
+}
+
 export async function fetchUserDnaStats(userId: string) {
   const supabase = createClient();
   try {
