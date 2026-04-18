@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { PromoterBadge } from '@/components/PromoterBadge';
+import PromoterBadge from '@/components/PromoterBadge';
 import DnaRadarChart, { DnaData } from '@/components/DnaRadarChart';
 import { BLOOM_CONFIG, type Post, type Review, type Film } from '@/lib/types';
 
