@@ -5,9 +5,11 @@ import { useState, useEffect } from 'react';
 import BloomRingGauge from '@/components/BloomRingGauge';
 import DnaRadarChart, { DnaData } from '@/components/DnaRadarChart';
 import PromoterBadge from '@/components/PromoterBadge';
+import BadgeGrid from '@/components/BadgeGrid';
 import { BLOOM_CONFIG, Film, Review } from '@/lib/types';
 import { createReadonlyClient } from '@/lib/supabase/readonly';
 import { createClient } from '@/lib/supabase/client';
+import { fetchUserBadgesMap } from '@/lib/supabase/community';
 
 type ReviewWithProfile = Review & {
   profiles?: { nickname?: string; promoter_rank?: string };
@@ -63,7 +65,7 @@ function DnaBar({ label, value, color = '#FF6B9D' }: { label: string; value: num
 }
 
 /* ── 리뷰 아이템 ── */
-function ReviewItem({ review, currentUserId }: { review: ReviewWithProfile; currentUserId: string | null }) {
+function ReviewItem({ review, currentUserId, badges }: { review: ReviewWithProfile; currentUserId: string | null; badges: string[] }) {
   const votes = review.review_votes ?? [];
   const initialCount = votes.length;
   const initialVoted = !!(currentUserId && votes.some(v => v.user_id === currentUserId));
@@ -111,6 +113,7 @@ function ReviewItem({ review, currentUserId }: { review: ReviewWithProfile; curr
           </div>
           <span className="text-sm text-gray-300">{review.profiles?.nickname ?? '익명'}</span>
           <PromoterBadge rank={review.profiles?.promoter_rank} />
+          <BadgeGrid badges={badges} size="sm" max={2} />
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-blue-400">{review.audience_score}</span>
@@ -146,6 +149,7 @@ function ReviewItem({ review, currentUserId }: { review: ReviewWithProfile; curr
 /* ── 메인 클라이언트 컴포넌트 ── */
 export default function FilmDetailClient({ film }: FilmDetailClientProps) {
   const [reviews, setReviews] = useState<ReviewWithProfile[]>([]);
+  const [badgesMap, setBadgesMap] = useState<Record<string, string[]>>({});
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(film.likes_count ?? 0);
   const [likeLoading, setLikeLoading] = useState(false);
@@ -199,7 +203,15 @@ export default function FilmDetailClient({ film }: FilmDetailClientProps) {
         .eq('film_id', f.id)
         .order('likes_count', { ascending: false })
         .limit(10);
-      if (data) setReviews(data as ReviewWithProfile[]);
+      if (data) {
+        const list = data as ReviewWithProfile[];
+        setReviews(list);
+        const userIds = Array.from(new Set(list.map(r => r.user_id).filter((v): v is string => !!v)));
+        if (userIds.length > 0) {
+          const map = await fetchUserBadgesMap(userIds);
+          setBadgesMap(map);
+        }
+      }
       setReviewsLoaded(true);
     })();
   }, [f.id]);
@@ -469,7 +481,7 @@ export default function FilmDetailClient({ film }: FilmDetailClientProps) {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {reviews.map(r => <ReviewItem key={r.id} review={r} currentUserId={currentUserId} />)}
+              {reviews.map(r => <ReviewItem key={r.id} review={r} currentUserId={currentUserId} badges={badgesMap[r.user_id ?? ''] ?? []} />)}
             </div>
           )}
         </div>
