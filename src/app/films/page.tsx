@@ -4,12 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import type { Film } from '@/lib/types';
-import { BLOOM_CONFIG } from '@/lib/types';
+import { BLOOM_CONFIG, AI_TOOLS } from '@/lib/types';
 
 type SortOption = 'latest' | 'ps_high' | 'views';
 
 const GENRE_FILTERS = ['전체', 'SF', '드라마', '판타지', '스릴러', '로맨스', '사이버펑크', '다큐멘터리', '실험영화', '뮤직비디오'];
-const TOOL_FILTERS = ['전체', 'Sora 2', 'Veo 3', 'Runway Gen-4', 'Kling 2.0', 'Pika 2.2', 'Hailuo', 'Luma Dream Machine', 'Midjourney', 'Other'];
+const TOOL_FILTERS = ['전체', ...AI_TOOLS];
 
 export default function FilmsPage() {
   const [films, setFilms] = useState<Film[]>([]);
@@ -83,7 +83,7 @@ export default function FilmsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-4 border-b border-gray-800">
           {/* Tool filter */}
           <div className="flex gap-2 flex-wrap">
-            {TOOL_FILTERS.slice(0, 6).map((t) => (
+            {TOOL_FILTERS.map((t) => (
               <button key={t} onClick={() => setTool(t)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                   tool === t
