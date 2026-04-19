@@ -26,6 +26,7 @@ export default function Home() {
       .from('films')
       .select('*, profiles(nickname, avatar_url)')
       .eq('is_published', true)
+      .eq('content_type', 'film')
       .order('created_at', { ascending: false })
       .limit(6)
       .then(({ data }) => { if (data) setLatestFilms(data as Film[]); });
