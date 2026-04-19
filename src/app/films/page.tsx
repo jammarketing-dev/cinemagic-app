@@ -29,7 +29,8 @@ export default function FilmsPage() {
     let query = supabase
       .from('films')
       .select('*, profiles(nickname)')
-      .eq('is_published', true);
+      .eq('is_published', true)
+      .eq('content_type', 'film');
 
     if (genre !== '전체') {
       query = query.contains('genre', [genre]);
