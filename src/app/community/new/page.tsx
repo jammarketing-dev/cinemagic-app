@@ -47,6 +47,7 @@ export default function NewPostPage() {
       .from('films')
       .select('id, title, prompt_score, audience_score')
       .eq('is_published', true)
+      .eq('content_type', 'film')
       .order('created_at', { ascending: false })
       .limit(50)
       .then(({ data }) => setFilms(data ?? []));
