@@ -91,6 +91,7 @@ export default function PromptScorePage() {
         .from('films')
         .select('*, profiles(nickname)')
         .eq('is_published', true)
+        .eq('content_type', 'film')
         .not('prompt_score', 'is', null)
         .order('prompt_score', { ascending: false });
 
