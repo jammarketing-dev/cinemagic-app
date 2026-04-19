@@ -288,6 +288,7 @@ export async function fetchUserCreatedFilms(userId: string, limit = 10) {
       .select('id, title, thumbnail_url, prompt_score, audience_score, bloom_stage, youtube_url, creator_id')
       .eq('creator_id', userId)
       .eq('is_published', true)
+      .eq('content_type', 'film')
       .order('created_at', { ascending: false })
       .limit(limit);
     if (error) throw error;
