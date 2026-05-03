@@ -7,14 +7,16 @@
  * 008_curator_reject.sql 적용 후 v_review_pending 뷰 우선 사용,
  * 미적용 시 films 직접 쿼리로 fallback (is_curator_rejected 컬럼 없는 경우).
  */
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import { CurateGrid } from './CurateGrid';
 import type { PendingFilm } from './CurateGrid';
 
 export const dynamic = 'force-dynamic';
 
 async function fetchPending(): Promise<PendingFilm[]> {
-  const admin = createAdminClient();
+  // 사용자 세션 client. RLS 정책(films_admin_select)이 admin role 검증.
+  // 009 마이그레이션 적용 후엔 admin role users가 films 모든 row SELECT 가능.
+  const admin = await createClient();
   const select =
     'id,title,thumbnail_url,youtube_url,quality_score,quality_tier,prompt_score,' +
     'dna_storytelling,dna_visual,dna_creativity,dna_prompt_design,dna_sound,' +
@@ -46,7 +48,7 @@ async function fetchPending(): Promise<PendingFilm[]> {
 }
 
 async function fetchLastReview(): Promise<{ days: number | null; newSince: number }> {
-  const admin = createAdminClient();
+  const admin = await createClient();
   const last = await admin
     .from('films')
     .select('updated_at')

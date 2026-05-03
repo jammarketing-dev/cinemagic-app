@@ -6,11 +6,10 @@
  * publish: films.is_published=true → 사이트 즉시 노출
  * reject: films.is_curator_rejected=true (soft hide, 검토 이력 보존)
  *
- * Service Role 사용 (RLS 우회) — admin/layout.tsx에서 role 검증 후라 안전.
- * 008_curator_reject.sql 적용 필요 (films.is_curator_rejected 컬럼).
+ * 사용자 세션(server.ts) 사용. RLS 정책 films_admin_select/update가 admin role
+ * 검증. 008/009 마이그레이션 적용 필요. SUPABASE_SERVICE_KEY 불필요.
  */
 import { revalidatePath } from 'next/cache';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
 async function assertAdmin() {
@@ -29,8 +28,8 @@ async function assertAdmin() {
 export async function publishFilms(filmIds: string[]): Promise<{ updated: number }> {
   if (!filmIds || filmIds.length === 0) return { updated: 0 };
   await assertAdmin();
-  const admin = createAdminClient();
-  const { data, error } = await admin
+  const supabase = await createClient();
+  const { data, error } = await supabase
     .from('films')
     .update({ is_published: true })
     .in('id', filmIds)
@@ -43,9 +42,9 @@ export async function publishFilms(filmIds: string[]): Promise<{ updated: number
 export async function rejectFilms(filmIds: string[]): Promise<{ updated: number; warning?: string }> {
   if (!filmIds || filmIds.length === 0) return { updated: 0 };
   await assertAdmin();
-  const admin = createAdminClient();
+  const supabase = await createClient();
   // soft hide: is_curator_rejected=true + review_rejected_at=now() (008 마이그레이션 컬럼)
-  const { data, error } = await admin
+  const { data, error } = await supabase
     .from('films')
     .update({
       is_curator_rejected: true,
@@ -56,7 +55,7 @@ export async function rejectFilms(filmIds: string[]): Promise<{ updated: number;
     .select('id');
   if (error) {
     // 008 미적용 fallback: is_published=false만
-    const { data: data2, error: error2 } = await admin
+    const { data: data2, error: error2 } = await supabase
       .from('films')
       .update({ is_published: false })
       .in('id', filmIds)
